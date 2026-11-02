@@ -34,22 +34,23 @@
   .progress div { height: 100%; background: var(--green); box-shadow: 0 0 12px var(--green); width: 0; transition: width .3s; }
   #count { font: 600 22px/1 var(--display); letter-spacing: 1px; white-space: nowrap; }
 
-  main { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; padding: 16px; max-width: 1300px; margin: 0 auto; }
-  .card { position: relative; background: var(--card); border: 2px solid var(--line); padding: 12px 10px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; user-select: none; transition: border-color .15s, box-shadow .15s;
-    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%); }
-  .card:hover, .card:focus-visible { border-color: #444; outline: none; }
-  .card.got { border-color: var(--green); box-shadow: inset 0 0 24px #95D60026; }
-  .card.got::after { content: "DRUNK"; position: absolute; top: 10px; right: -28px; background: var(--green); color: #000; font: 600 14px/1.2 var(--display); letter-spacing: 1px; padding: 2px 30px; transform: rotate(35deg); }
-  .card svg, .card img { width: 80px; height: 150px; transition: transform .15s; }
-  .card img { width: 100%; max-width: 140px; object-fit: contain; }
-  .card:hover :is(svg, img) { transform: rotate(-4deg) scale(1.05); }
-  .card:not(.got) :is(svg, img) { filter: grayscale(.6) brightness(.75); }
-  .name { font: 600 20px/1 var(--display); letter-spacing: .5px; text-transform: uppercase; margin-top: 10px; }
-  .meta { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
-  .tag { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #000; background: #ff3b3b; padding: 1px 6px; transform: skewX(-12deg); }
-  .card input { display: none; }
-  .yearhead { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; font: 600 52px/1 var(--display); color: var(--green); padding-top: 16px; }
-  .yearhead::after { content: ""; flex: 1; height: 2px; background: linear-gradient(90deg, var(--green), transparent); }
+  main { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  .card { position: relative; background: linear-gradient(180deg, #141414, #0a0a0a); border: 2px solid var(--line); border-radius: 12px; padding: 10px 8px 12px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; user-select: none; transition: border-color .15s, transform .15s, box-shadow .15s; }
+  .card:hover, .card:focus-visible { border-color: #444; transform: translateY(-2px); outline: none; }
+  .card.got { border-color: var(--green); box-shadow: 0 0 16px #95D60033; }
+  .num { align-self: flex-start; font: 600 18px/1 var(--display); color: var(--muted); letter-spacing: 1px; }
+  .card.got .num { color: var(--green); }
+  .caught { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #333; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: transparent; }
+  .card.got .caught { background: var(--green); border-color: var(--green); color: #000; }
+  .pic { width: 100%; height: 150px; margin: 4px 0 6px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle, #ffffff14 0 55%, transparent 56%); }
+  .pic img { max-width: 100%; max-height: 150px; object-fit: contain; border-radius: 8px; transition: transform .15s; }
+  .pic svg { width: 76px; height: 140px; }
+  .card:hover .pic > * { transform: scale(1.06); }
+  .card:not(.got) .pic > * { filter: grayscale(.55) brightness(.7); }
+  .name { font: 600 18px/1 var(--display); letter-spacing: .5px; text-transform: uppercase; min-height: 36px; display: flex; align-items: center; }
+  .badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+  .type { font: 600 11px/1 Montserrat, sans-serif; text-transform: uppercase; letter-spacing: .5px; color: #000; padding: 4px 8px; border-radius: 4px; }
+  .year { font: 600 11px/1 Montserrat, sans-serif; color: var(--muted); padding: 4px 6px; border: 1px solid #333; border-radius: 4px; }
   footer { color: var(--muted); font-size: 13px; text-align: center; padding: 32px 16px; border-top: 1px solid var(--line); text-transform: none; }
 </style>
 </head>
@@ -77,9 +78,9 @@
 
 <header>
   <div class="controls">
-    <input type="search" id="q" placeholder="Search flavours…" aria-label="Search flavours">
+    <input type="search" id="q" placeholder="Search name or #no…" aria-label="Search flavours">
     <select id="sort" aria-label="Sort">
-      <option value="year">Sort: release year</option>
+      <option value="num">Sort: No.</option>
       <option value="az">Sort: A–Z</option>
     </select>
     <select id="line" aria-label="Filter by line"><option value="">All lines</option></select>
@@ -94,7 +95,7 @@
 
 <main id="grid"></main>
 
-<footer>Fan-made collection tracker, not affiliated with or endorsed by Monster Energy. Monster Energy name and logo are trademarks of Monster Energy Company (logo via Wikimedia Commons). Photos from <a href="https://world.openfoodfacts.org" style="color:inherit">Open Food Facts</a> (CC-BY-SA); drawn cans are illustrations where no photo exists. Release years are approximate.</footer>
+<footer>Fan-made collection tracker, not affiliated with or endorsed by Monster Energy. Monster Energy name and logo are trademarks of Monster Energy Company (logo via Wikimedia Commons). Flavour list and can photos from the <a href="https://www.listchallenges.com/ultimate-list-of-all-monster-energy-2026" style="color:inherit">ListChallenges community list</a>; drawn cans appear if a photo fails to load. Release years are approximate.</footer>
 
 <script src="flavours.js"></script>
 <script>
@@ -126,44 +127,47 @@ function can(f) {
   </svg>`;
 }
 
+const TYPE_COLOURS = { Original: "#95D600", Ultra: "#E8E8E8", Juice: "#FF9F1C", Java: "#C8A27A", "Rehab & Tea": "#F5D547",
+  Hydro: "#4FC3F7", Nitro: "#B0BEC5", Maxx: "#E91E63", Reserve: "#FFD700", Specials: "#B388FF", Brewing: "#FF5252" };
+FLAVOURS.forEach((f, i) => f.no = i + 1);
+const num = f => "#" + String(f.no).padStart(3, "0");
+
 function card(f) {
   const got = drunk.has(f.n);
-  // Real photo when we have one; the drawing sits hidden behind it as the fallback
-  const pic = f.i
-    ? `<img src="${f.i}" alt="${esc(f.n)} can" onerror="this.nextElementSibling.hidden=false;this.remove()"><span hidden>${can(f)}</span>`
-    : can(f);
+  // Photo first; if it fails to load, the drawing in the can's measured colours takes its place
   return `<div class="card${got ? " got" : ""}" data-id="${esc(f.n)}" role="checkbox" aria-checked="${got}" tabindex="0">
-    ${pic}
+    <span class="num">${num(f)}</span><span class="caught" aria-hidden="true">✓</span>
+    <div class="pic"><img src="${f.i}" alt="${esc(f.n)} can" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML=this.nextElementSibling.innerHTML"><template>${can(f)}</template></div>
     <div class="name">${esc(f.n)}</div>
-    <div class="meta">${f.y} · ${esc(f.l)}</div>
-    ${f.d ? '<div class="tag">Discontinued</div>' : ""}
-    <input type="checkbox" ${got ? "checked" : ""} tabindex="-1" aria-hidden="true">
+    <div class="badges"><span class="type" style="background:${TYPE_COLOURS[f.l] || "#888"}">${esc(f.l)}</span>${f.y ? `<span class="year">${f.y}</span>` : ""}</div>
   </div>`;
 }
 
-function render() {
-  const q = $("q").value.trim().toLowerCase(), sort = $("sort").value, line = $("line").value, show = $("show").value;
-  const list = FLAVOURS.filter(f =>
-    (!q || f.n.toLowerCase().includes(q)) && (!line || f.l === line) &&
-    (show === "all" || (show === "got") === drunk.has(f.n)));
-  list.sort(sort === "az" ? (a, b) => a.n.localeCompare(b.n) : (a, b) => a.y - b.y || a.n.localeCompare(b.n));
-
-  let html = "", year;
-  for (const f of list) {
-    if (sort === "year" && f.y !== year) html += `<div class="yearhead">${year = f.y}</div>`;
-    html += card(f);
-  }
-  $("grid").innerHTML = html || '<p style="color:var(--muted)">No flavours match.</p>';
-
+function updateCount() {
   const n = FLAVOURS.filter(f => drunk.has(f.n)).length;
   $("bar").style.width = (100 * n / FLAVOURS.length) + "%";
   $("count").textContent = `${n} / ${FLAVOURS.length} DRUNK`;
 }
 
+function render() {
+  const q = $("q").value.trim().toLowerCase(), sort = $("sort").value, line = $("line").value, show = $("show").value;
+  const list = FLAVOURS.filter(f =>
+    (!q || f.n.toLowerCase().includes(q) || num(f).includes(q)) && (!line || f.l === line) &&
+    (show === "all" || (show === "got") === drunk.has(f.n)));
+  if (sort === "az") list.sort((a, b) => a.n.localeCompare(b.n));
+  $("grid").innerHTML = list.map(card).join("") || '<p style="color:var(--muted)">No flavours match.</p>';
+  updateCount();
+}
+
 function toggle(el) {
-  const id = el.dataset.id;
-  drunk.has(id) ? drunk.delete(id) : drunk.add(id);
-  save(); render();
+  const id = el.dataset.id, got = !drunk.has(id);
+  got ? drunk.add(id) : drunk.delete(id);
+  save();
+  // Update the tile in place so 300+ images don't re-render on every tick
+  if ($("show").value !== "all") return render();
+  el.classList.toggle("got", got);
+  el.setAttribute("aria-checked", got);
+  updateCount();
 }
 
 $("grid").addEventListener("click", e => { const c = e.target.closest(".card"); if (c) toggle(c); });
@@ -173,7 +177,7 @@ $("grid").addEventListener("keydown", e => {
 });
 for (const id of ["q", "sort", "line", "show"]) $(id).addEventListener("input", render);
 for (const l of [...new Set(FLAVOURS.map(f => f.l))]) $("line").add(new Option(l, l));
-try { $("sort").value = localStorage.getItem(KEY + "-sort") || "year"; } catch {}
+try { if (localStorage.getItem(KEY + "-sort") === "az") $("sort").value = "az"; } catch {}
 $("sort").addEventListener("change", () => { try { localStorage.setItem(KEY + "-sort", $("sort").value); } catch {} });
 render();
 </script>
