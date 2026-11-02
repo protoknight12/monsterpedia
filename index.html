@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monsterpedia</title>
+<meta name="description" content="Every Monster Energy flavour. Tick off the ones you've drunk.">
+<style>
+  :root { --bg:#0b0b0b; --card:#161616; --line:#2a2a2a; --text:#eee; --muted:#999; --green:#7CFC00; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 1; background: #0b0b0bee; backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); padding: 12px 16px; }
+  h1 { margin: 0 0 8px; font-size: 22px; letter-spacing: 1px; }
+  h1 span { color: var(--green); }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input[type=search], select { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; font: inherit; }
+  input[type=search] { flex: 1 1 180px; }
+  label.toggle { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+  .progress { margin-top: 8px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .progress div { height: 100%; background: var(--green); width: 0; transition: width .3s; }
+  #count { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  main { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 16px; max-width: 1300px; margin: 0 auto; }
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; user-select: none; }
+  .card.got { border-color: var(--green); }
+  .card svg, .card img { width: 80px; height: 144px; transition: transform .15s; }
+  .card img { width: 100%; max-width: 140px; object-fit: contain; background: #fff; border-radius: 6px; }
+  .card:hover :is(svg, img) { transform: rotate(-4deg) scale(1.04); }
+  .card:not(.got) :is(svg, img) { filter: grayscale(.5) brightness(.8); }
+  .name { font-weight: 600; margin-top: 8px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .tag { font-size: 11px; color: #ff8a80; }
+  .card input { accent-color: var(--green); width: 18px; height: 18px; margin-top: 6px; pointer-events: none; }
+  .yearhead { grid-column: 1 / -1; font-size: 20px; font-weight: 700; color: var(--green); border-bottom: 1px solid var(--line); padding-top: 8px; }
+  footer { color: var(--muted); font-size: 12px; text-align: center; padding: 24px 16px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="shine" x1="0" x2="1">
+      <stop offset="0" stop-color="#000" stop-opacity=".35"/>
+      <stop offset=".25" stop-color="#fff" stop-opacity=".25"/>
+      <stop offset=".4" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".85" stop-color="#000" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".45"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" x2="1">
+      <stop offset="0" stop-color="#777"/><stop offset=".4" stop-color="#eee"/><stop offset="1" stop-color="#666"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<header>
+  <h1>MONSTER<span>PEDIA</span></h1>
+  <div class="controls">
+    <input type="search" id="q" placeholder="Search flavours…" aria-label="Search flavours">
+    <select id="sort" aria-label="Sort">
+      <option value="year">Sort: release year</option>
+      <option value="az">Sort: A–Z</option>
+    </select>
+    <select id="line" aria-label="Filter by line"><option value="">All lines</option></select>
+    <select id="show" aria-label="Show">
+      <option value="all">Show all</option>
+      <option value="got">Drunk</option>
+      <option value="need">Not yet</option>
+    </select>
+  </div>
+  <div class="progress"><div id="bar"></div></div>
+  <div id="count"></div>
+</header>
+
+<main id="grid"></main>
+
+<footer>Fan-made collection tracker, not affiliated with Monster Energy. Photos from <a href="https://world.openfoodfacts.org" style="color:inherit">Open Food Facts</a> (CC-BY-SA); drawn cans are illustrations where no photo exists. Release years are approximate.</footer>
+
+<script src="flavours.js"></script>
+<script>
+const KEY = "monsterpedia-drunk";
+let drunk;
+try { drunk = new Set(JSON.parse(localStorage.getItem(KEY)) || []); } catch { drunk = new Set(); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...drunk])); } catch {} };
+
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+// Light can colours need a dark label so the text stays readable
+const isLight = hex => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 > 160; };
+
+function can(f) {
+  const claw = [33, 50, 67].map((x, i) =>
+    `<polyline points="${x},${42 + i * 3} ${x - 5},${62 + i * 2} ${x + 3},${80} ${x - 4},${98 - i * 2} ${x + 1},${122 - i * 3}" />`).join("");
+  const label = isLight(f.c) ? "#222" : "#fff";
+  return `<svg viewBox="0 0 100 180" role="img" aria-label="${esc(f.n)} can">
+    <path d="M22 12 H78 L85 22 H15 Z" fill="url(#metal)"/>
+    <ellipse cx="50" cy="12" rx="28" ry="4" fill="#ccc" stroke="#888"/>
+    <rect x="42" y="8" width="16" height="6" rx="3" fill="#aaa" stroke="#777"/>
+    <rect x="15" y="22" width="70" height="140" fill="${f.c}"/>
+    <g fill="none" stroke="${f.a}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">${claw}</g>
+    <text x="50" y="142" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="12" fill="${label}" letter-spacing="1">MONSTER</text>
+    <text x="50" y="154" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" fill="${f.a}" letter-spacing="2">${esc(f.l.toUpperCase())}</text>
+    <rect x="15" y="22" width="70" height="140" fill="url(#shine)"/>
+    <path d="M15 162 H85 L80 170 H20 Z" fill="url(#metal)"/>
+  </svg>`;
+}
+
+function card(f) {
+  const got = drunk.has(f.n);
+  // Real photo when we have one; the drawing sits hidden behind it as the fallback
+  const pic = f.i
+    ? `<img src="${f.i}" alt="${esc(f.n)} can" onerror="this.nextElementSibling.hidden=false;this.remove()"><span hidden>${can(f)}</span>`
+    : can(f);
+  return `<div class="card${got ? " got" : ""}" data-id="${esc(f.n)}" role="checkbox" aria-checked="${got}" tabindex="0">
+    ${pic}
+    <div class="name">${esc(f.n)}</div>
+    <div class="meta">${f.y} · ${esc(f.l)}</div>
+    ${f.d ? '<div class="tag">Discontinued</div>' : ""}
+    <input type="checkbox" ${got ? "checked" : ""} tabindex="-1" aria-hidden="true">
+  </div>`;
+}
+
+function render() {
+  const q = $("q").value.trim().toLowerCase(), sort = $("sort").value, line = $("line").value, show = $("show").value;
+  const list = FLAVOURS.filter(f =>
+    (!q || f.n.toLowerCase().includes(q)) && (!line || f.l === line) &&
+    (show === "all" || (show === "got") === drunk.has(f.n)));
+  list.sort(sort === "az" ? (a, b) => a.n.localeCompare(b.n) : (a, b) => a.y - b.y || a.n.localeCompare(b.n));
+
+  let html = "", year;
+  for (const f of list) {
+    if (sort === "year" && f.y !== year) html += `<div class="yearhead">${year = f.y}</div>`;
+    html += card(f);
+  }
+  $("grid").innerHTML = html || '<p style="color:var(--muted)">No flavours match.</p>';
+
+  const n = FLAVOURS.filter(f => drunk.has(f.n)).length;
+  $("bar").style.width = (100 * n / FLAVOURS.length) + "%";
+  $("count").textContent = `${n} / ${FLAVOURS.length} flavours drunk`;
+}
+
+function toggle(el) {
+  const id = el.dataset.id;
+  drunk.has(id) ? drunk.delete(id) : drunk.add(id);
+  save(); render();
+}
+
+$("grid").addEventListener("click", e => { const c = e.target.closest(".card"); if (c) toggle(c); });
+$("grid").addEventListener("keydown", e => {
+  const c = e.target.closest(".card");
+  if (c && (e.key === " " || e.key === "Enter")) { e.preventDefault(); toggle(c); }
+});
+for (const id of ["q", "sort", "line", "show"]) $(id).addEventListener("input", render);
+for (const l of [...new Set(FLAVOURS.map(f => f.l))]) $("line").add(new Option(l, l));
+try { $("sort").value = localStorage.getItem(KEY + "-sort") || "year"; } catch {}
+$("sort").addEventListener("change", () => { try { localStorage.setItem(KEY + "-sort", $("sort").value); } catch {} });
+render();
+</script>
+</body>
+</html>
