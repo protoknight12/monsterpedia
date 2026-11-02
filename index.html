@@ -5,33 +5,51 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Monsterpedia</title>
 <meta name="description" content="Every Monster Energy flavour. Tick off the ones you've drunk.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;700&display=swap">
 <style>
-  :root { --bg:#0b0b0b; --card:#161616; --line:#2a2a2a; --text:#eee; --muted:#999; --green:#7CFC00; }
+  :root { --bg:#000; --card:#0d0d0d; --line:#1f1f1f; --text:#f2f2f2; --muted:#8a8a8a; --green:#95D600; --display:"Anton", Impact, sans-serif; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, sans-serif; }
-  header { position: sticky; top: 0; z-index: 1; background: #0b0b0bee; backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); padding: 12px 16px; }
-  h1 { margin: 0 0 8px; font-size: 22px; letter-spacing: 1px; }
-  h1 span { color: var(--green); }
-  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  input[type=search], select { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; font: inherit; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 500 16px/1.35 "Barlow Condensed", "Arial Narrow", sans-serif; text-transform: uppercase; letter-spacing: .3px; }
+  /* grain texture over everything */
+  body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 10; opacity: .07;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  a { color: var(--green); }
+
+  .hero { position: relative; padding: 48px 16px 64px; text-align: center; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 120%, #95D60033, transparent 60%), #000;
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%); }
+  .hero h1 { margin: 0; font: 400 clamp(48px, 11vw, 128px)/.9 var(--display); letter-spacing: 2px; }
+  .hero h1 span { color: var(--green); text-shadow: 0 0 24px #95D60088; }
+  .hero p { margin: 12px 0 0; color: var(--muted); font-size: 18px; letter-spacing: 3px; }
+
+  header { position: sticky; top: 0; z-index: 2; background: #000e; backdrop-filter: blur(6px); border-bottom: 2px solid var(--green); padding: 10px 16px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; max-width: 1300px; margin: 0 auto; }
+  input[type=search], select { background: #000; color: var(--text); border: 2px solid #333; border-radius: 0; padding: 8px 12px; font: inherit; text-transform: uppercase; }
+  input[type=search]:focus, select:focus { outline: none; border-color: var(--green); }
   input[type=search] { flex: 1 1 180px; }
-  label.toggle { display: flex; gap: 6px; align-items: center; color: var(--muted); }
-  .progress { margin-top: 8px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
-  .progress div { height: 100%; background: var(--green); width: 0; transition: width .3s; }
-  #count { color: var(--muted); font-size: 13px; margin-top: 4px; }
-  main { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 16px; max-width: 1300px; margin: 0 auto; }
-  .card { background: var(--card); border: 2px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; user-select: none; }
-  .card.got { border-color: var(--green); }
-  .card svg, .card img { width: 80px; height: 144px; transition: transform .15s; }
-  .card img { width: 100%; max-width: 140px; object-fit: contain; background: #fff; border-radius: 6px; }
-  .card:hover :is(svg, img) { transform: rotate(-4deg) scale(1.04); }
-  .card:not(.got) :is(svg, img) { filter: grayscale(.5) brightness(.8); }
-  .name { font-weight: 600; margin-top: 8px; }
-  .meta { color: var(--muted); font-size: 13px; }
-  .tag { font-size: 11px; color: #ff8a80; }
-  .card input { accent-color: var(--green); width: 18px; height: 18px; margin-top: 6px; pointer-events: none; }
-  .yearhead { grid-column: 1 / -1; font-size: 20px; font-weight: 700; color: var(--green); border-bottom: 1px solid var(--line); padding-top: 8px; }
-  footer { color: var(--muted); font-size: 12px; text-align: center; padding: 24px 16px; }
+  .stats { max-width: 1300px; margin: 8px auto 0; display: flex; align-items: center; gap: 12px; }
+  .progress { flex: 1; height: 8px; background: #1a1a1a; transform: skewX(-20deg); overflow: hidden; }
+  .progress div { height: 100%; background: var(--green); box-shadow: 0 0 12px var(--green); width: 0; transition: width .3s; }
+  #count { font: 400 18px var(--display); letter-spacing: 1px; white-space: nowrap; }
+
+  main { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; padding: 16px; max-width: 1300px; margin: 0 auto; }
+  .card { position: relative; background: var(--card); border: 2px solid var(--line); padding: 12px 10px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; user-select: none; transition: border-color .15s, box-shadow .15s;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%); }
+  .card:hover, .card:focus-visible { border-color: #444; outline: none; }
+  .card.got { border-color: var(--green); box-shadow: inset 0 0 24px #95D60026; }
+  .card.got::after { content: "DRUNK"; position: absolute; top: 10px; right: -28px; background: var(--green); color: #000; font: 400 12px var(--display); letter-spacing: 1px; padding: 2px 30px; transform: rotate(35deg); }
+  .card svg, .card img { width: 80px; height: 150px; transition: transform .15s; }
+  .card img { width: 100%; max-width: 140px; object-fit: contain; }
+  .card:hover :is(svg, img) { transform: rotate(-4deg) scale(1.05); }
+  .card:not(.got) :is(svg, img) { filter: grayscale(.6) brightness(.75); }
+  .name { font: 400 17px/1.1 var(--display); letter-spacing: .5px; margin-top: 10px; }
+  .meta { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .tag { display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 700; color: #000; background: #ff3b3b; padding: 1px 6px; transform: skewX(-12deg); }
+  .card input { display: none; }
+  .yearhead { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; font: 400 40px/1 var(--display); color: var(--green); padding-top: 16px; }
+  .yearhead::after { content: ""; flex: 1; height: 2px; background: linear-gradient(90deg, var(--green), transparent); }
+  footer { color: var(--muted); font-size: 13px; text-align: center; padding: 32px 16px; border-top: 1px solid var(--line); text-transform: none; }
 </style>
 </head>
 <body>
@@ -50,8 +68,12 @@
   </defs>
 </svg>
 
-<header>
+<section class="hero">
   <h1>MONSTER<span>PEDIA</span></h1>
+  <p>Every can. Every flavour. How many have you cracked?</p>
+</section>
+
+<header>
   <div class="controls">
     <input type="search" id="q" placeholder="Search flavours…" aria-label="Search flavours">
     <select id="sort" aria-label="Sort">
@@ -65,8 +87,7 @@
       <option value="need">Not yet</option>
     </select>
   </div>
-  <div class="progress"><div id="bar"></div></div>
-  <div id="count"></div>
+  <div class="stats"><div class="progress"><div id="bar"></div></div><div id="count"></div></div>
 </header>
 
 <main id="grid"></main>
@@ -134,7 +155,7 @@ function render() {
 
   const n = FLAVOURS.filter(f => drunk.has(f.n)).length;
   $("bar").style.width = (100 * n / FLAVOURS.length) + "%";
-  $("count").textContent = `${n} / ${FLAVOURS.length} flavours drunk`;
+  $("count").textContent = `${n} / ${FLAVOURS.length} DRUNK`;
 }
 
 function toggle(el) {
