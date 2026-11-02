@@ -51,6 +51,17 @@
   .badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
   .type { font: 600 11px/1 Montserrat, sans-serif; text-transform: uppercase; letter-spacing: .5px; color: #000; padding: 4px 8px; border-radius: 4px; }
   .year { font: 600 11px/1 Montserrat, sans-serif; color: var(--muted); padding: 4px 6px; border: 1px solid #333; border-radius: 4px; }
+  .btn { background: var(--green); color: #000; border: 0; padding: 9px 16px; font: 600 18px/1 var(--display); letter-spacing: 1px; text-transform: uppercase; cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--text); border: 2px solid #333; }
+  .btn:hover { filter: brightness(1.1); }
+  dialog { background: #0d0d0d; color: var(--text); border: 2px solid var(--green); padding: 20px; max-width: min(420px, calc(100vw - 32px)); text-align: center; }
+  dialog::backdrop { background: #000c; }
+  dialog h2 { margin: 0 0 6px; font: 600 32px/1 var(--display); text-transform: uppercase; color: var(--green); }
+  dialog p { color: var(--muted); margin: 6px 0 14px; }
+  #qr { background: #fff; padding: 12px; display: inline-block; line-height: 0; }
+  #qr svg { width: min(260px, 70vw); height: auto; }
+  .row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+  #syncLink { width: 100%; margin-top: 12px; background: #000; color: var(--muted); border: 1px solid #333; padding: 6px 8px; font: 12px monospace; }
   footer { color: var(--muted); font-size: 13px; text-align: center; padding: 32px 16px; border-top: 1px solid var(--line); text-transform: none; }
 </style>
 </head>
@@ -89,14 +100,37 @@
       <option value="got">Drunk</option>
       <option value="need">Not yet</option>
     </select>
+    <button class="btn" id="syncBtn" type="button">Sync</button>
   </div>
   <div class="stats"><div class="progress"><div id="bar"></div></div><div id="count"></div></div>
 </header>
 
 <main id="grid"></main>
 
+<dialog id="exportDlg">
+  <h2>Sync to another device</h2>
+  <p>Scan with your other device's camera to copy your <b id="exportCount"></b> drunk flavours there.</p>
+  <div id="qr"></div>
+  <input id="syncLink" readonly aria-label="Sync link">
+  <div class="row">
+    <button class="btn" id="copyBtn" type="button">Copy link</button>
+    <button class="btn ghost" type="button" onclick="this.closest('dialog').close()">Close</button>
+  </div>
+</dialog>
+
+<dialog id="importDlg">
+  <h2>Import collection</h2>
+  <p>This link has <b id="importCount"></b> drunk flavours. This device has <b id="localCount"></b>.</p>
+  <div class="row">
+    <button class="btn" id="mergeBtn" type="button">Merge both</button>
+    <button class="btn ghost" id="replaceBtn" type="button">Replace mine</button>
+    <button class="btn ghost" type="button" onclick="this.closest('dialog').close()">Cancel</button>
+  </div>
+</dialog>
+
 <footer>Fan-made collection tracker, not affiliated with or endorsed by Monster Energy. Monster Energy name and logo are trademarks of Monster Energy Company (logo via Wikimedia Commons). Flavour list and can photos from the <a href="https://www.listchallenges.com/ultimate-list-of-all-monster-energy-2026" style="color:inherit">ListChallenges community list</a>; drawn cans appear if a photo fails to load. Release years are approximate.</footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="flavours.js"></script>
 <script>
 const KEY = "monsterpedia-drunk";
@@ -179,7 +213,53 @@ for (const id of ["q", "sort", "line", "show"]) $(id).addEventListener("input", 
 for (const l of [...new Set(FLAVOURS.map(f => f.l))]) $("line").add(new Option(l, l));
 try { if (localStorage.getItem(KEY + "-sort") === "az") $("sort").value = "az"; } catch {}
 $("sort").addEventListener("change", () => { try { localStorage.setItem(KEY + "-sort", $("sort").value); } catch {} });
+
+// --- QR sync: the collection travels as a bitset in the URL hash (bit i = flavour #i+1) ---
+const toCode = set => {
+  const bytes = new Uint8Array(Math.ceil(FLAVOURS.length / 8));
+  FLAVOURS.forEach((f, i) => { if (set.has(f.n)) bytes[i >> 3] |= 1 << (i & 7); });
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+};
+const fromCode = code => {
+  const bin = atob(code.replace(/-/g, "+").replace(/_/g, "/"));
+  return new Set(FLAVOURS.filter((f, i) => (bin.charCodeAt(i >> 3) >> (i & 7)) & 1).map(f => f.n));
+};
+const syncUrl = () => location.origin + location.pathname + "#sync=" + toCode(drunk);
+
+$("syncBtn").addEventListener("click", () => {
+  const url = syncUrl(), qr = qrcode(0, "M");
+  qr.addData(url); qr.make();
+  $("qr").innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  $("syncLink").value = url;
+  $("exportCount").textContent = drunk.size;
+  $("exportDlg").showModal();
+});
+$("copyBtn").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("syncLink").value); $("copyBtn").textContent = "Copied!"; }
+  catch { $("syncLink").select(); }
+  setTimeout(() => $("copyBtn").textContent = "Copy link", 1500);
+});
+
+function checkImport() {
+  const m = location.hash.match(/^#sync=([A-Za-z0-9_-]*)$/);
+  if (!m) return;
+  history.replaceState(null, "", location.pathname);
+  let incoming;
+  try { incoming = fromCode(m[1]); } catch { return; }
+  $("importCount").textContent = incoming.size;
+  $("localCount").textContent = drunk.size;
+  const apply = replace => {
+    if (replace) drunk = incoming; else incoming.forEach(n => drunk.add(n));
+    save(); render(); $("importDlg").close();
+  };
+  $("mergeBtn").onclick = () => apply(false);
+  $("replaceBtn").onclick = () => apply(true);
+  $("importDlg").showModal();
+}
+window.addEventListener("hashchange", checkImport);
+
 render();
+checkImport();
 </script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 // Source: ListChallenges "Ultimate List of All Monster Energy Flavours/Variants" (2026).
 // i = photo URL, c/a = measured can colours (used for the drawn fallback), y = release year where known
+// ORDER MATTERS: an entry's position is its # and its bit in QR sync codes. Only ever append new flavours at the end.
 const FLAVOURS = [
   {n: "Monster Energy",l: "Original",i: "https://www.listchallenges.com/f/items/c131fc04-e3de-4eaf-938a-c50742799bb9.jpg",c: "#0a0a0a",a: "#afea4a"},
   {n: "Mega Monster Energy (EU)",l: "Original",i: "https://www.listchallenges.com/f/items2024/a555f999-7888-4dac-9f79-85c5cab34d5e.jpg",c: "#0e140d",a: "#fefefe"},
